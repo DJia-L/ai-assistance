@@ -1,0 +1,23 @@
+# 忽略大型依赖目录以减少Cursor内存使用
+node_modules/
+.next/
+__pycache__/
+uploads/
+**/__pycache__/
+**/node_modules/
+
+# 忽略大文件
+*.log
+app.db
+*.db
+*.db-journal
+package-lock.json
+
+# 忽略前端构建文件
+frontend/.next/
+frontend/out/
+
+# 忽略后端缓存文件
+backend/**/__pycache__/
+backend/uploads/
+backend/ml/models/ 

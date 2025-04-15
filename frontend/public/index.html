@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>融媒体AI助手系统 - 方案2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent: #3B82F6;
+            --accent-2: #10B981;
+            --light-bg: #fafafa;
+            --card-bg: rgba(255, 255, 255, 0.15);
+            --card-hover: rgba(255, 255, 255, 0.25);
+            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: white;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 光束效果 */
+        .beam {
+            position: fixed;
+            width: 35vw;
+            height: 100vh;
+            background: linear-gradient(90deg, var(--accent) -80%, transparent);
+            opacity: 0.02;
+            top: 0;
+            left: -20vw;
+            transform: skewX(-15deg);
+            filter: blur(30px);
+            z-index: 1;
+            animation: beamMove 25s infinite alternate var(--transition-smooth);
+        }
+
+        .beam:nth-child(2) {
+            left: auto;
+            right: -40vw;
+            width: 70vw;
+            background: linear-gradient(90deg, var(--accent-2) -80%, transparent);
+            animation-delay: 8s;
+        }
+
+        @keyframes beamMove {
+            0% {
+                transform: skewX(-15deg) translateX(0);
+                opacity: 0.02;
+            }
+
+            25% {
+                opacity: 0.03;
+            }
+
+            50% {
+                transform: skewX(-15deg) translateX(40vw);
+                opacity: 0.04;
+            }
+
+            75% {
+                opacity: 0.03;
+            }
+
+            100% {
+                transform: skewX(-15deg) translateX(15vw);
+                opacity: 0.02;
+            }
+        }
+
+        /* 主视频背景 */
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .video-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 105%;
+            min-height: 105%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%) scale(1.05);
+            object-fit: cover;
+            filter: grayscale(0.1) contrast(1.1) brightness(1) opacity(0.7);
+            transition: all 1.5s ease;
+        }
+
+        .video-background.active {
+            filter: grayscale(0) contrast(1.15) brightness(1) opacity(0.7);
+        }
+
+        .image-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(0.2) contrast(1.1) brightness(0.8) opacity(0.15);
+            display: none;
+        }
+
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0) 0%, rgba(0, 0, 0, 0.05) 100%);
+            z-index: 1;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIj48L2ZlVHVyYnVsZW5jZT48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIj48L2ZlQ29sb3JNYXRyaXg+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMC4wNSI+PC9yZWN0Pjwvc3ZnPg==');
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.1;
+        }
+
+        /* 主内容 */
+        .main-container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            z-index: 3;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-direction: column;
+            padding: 0 8vw;
+        }
+
+        /* 标题区域 */
+        .header {
+            padding: 15vh 0 8vh;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .logo {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            z-index: 100;
+        }
+
+        .title-container {
+            position: relative;
+        }
+
+        .title {
+            font-size: 6vw;
+            font-weight: 300;
+            line-height: 1.1;
+            margin: 0;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+            transition: transform 1s ease;
+        }
+
+        .title .highlight {
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            font-weight: 400;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--text-secondary);
+            max-width: 550px;
+            margin-top: 1.5rem;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        /* 功能展示区 */
+        .features-wrapper {
+            width: 100%;
+            position: relative;
+            padding-bottom: 10vh;
+            max-width: 1600px;
+            margin: 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            /* 固定5列 */
+            grid-template-rows: repeat(2, 1fr);
+            /* 固定2行 */
+            grid-gap: 2rem;
+            width: 100%;
+            margin: 3vh 0;
+        }
+
+        .feature-item {
+            position: relative;
+            aspect-ratio: 1.6 / 1;
+            min-height: 200px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.5s var(--transition-smooth);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-item:hover {
+            background-color: var(--card-hover);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-item:hover .feature-icon {
+            transform: scale(1.1);
+            color: var(--accent);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            transition: transform 0.5s var(--transition-smooth), color 0.5s var(--transition-smooth);
+            transition-delay: 0.05s;
+            color: var(--accent);
+        }
+
+        .feature-title {
+            font-size: 1.4rem;
+            font-weight: 400;
+            margin-bottom: 0.8rem;
+            color: var(--text-primary);
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            opacity: 0.8;
+            max-width: 90%;
+        }
+
+        .feature-item::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 120%;
+            height: 120%;
+            background: linear-gradient(45deg,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.2) 40%,
+                    rgba(255, 255, 255, 0.4) 50%,
+                    rgba(255, 255, 255, 0.2) 60%,
+                    rgba(255, 255, 255, 0) 100%);
+            transform: rotate(45deg);
+            transition: all 0.8s var(--transition-smooth);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .feature-item:hover::after {
+            top: 100%;
+            left: 100%;
+        }
+
+        .feature-indicator {
+            position: absolute;
+            width: 15px;
+            height: 2px;
+            background-color: var(--accent);
+            top: 2rem;
+            right: 2rem;
+            opacity: 0.7;
+            transition: width 0.3s var(--transition-smooth);
+        }
+
+        .feature-item:hover .feature-indicator {
+            width: 25px;
+        }
+
+        /* 底部区域 */
+        .footer {
+            width: 100%;
+            padding: 4rem 0 2rem;
+            position: relative;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        /* 滚动效果 */
+        .scroll-down {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .scroll-down:hover {
+            opacity: 1;
+        }
+
+        .scroll-text {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            transform: rotate(90deg);
+            margin-bottom: 2rem;
+            white-space: nowrap;
+            color: var(--text-secondary);
+        }
+
+        .scroll-indicator {
+            width: 1px;
+            height: 60px;
+            background-color: var(--text-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scroll-indicator::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-color: var(--accent);
+            animation: scrollDown 2s infinite var(--transition-smooth);
+        }
+
+        @keyframes scrollDown {
+            0% {
+                top: -50%;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1400px) {
+            .features-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                padding: 0 6vw;
+            }
+
+            .title {
+                font-size: 8vw;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 4vw;
+            }
+
+            .title {
+                font-size: 11vw;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .logo {
+                top: 20px;
+                left: 20px;
+            }
+
+            .scroll-down {
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .feature-item {
+                min-height: 180px;
+                padding: 1.5rem;
+            }
+
+            .feature-title {
+                font-size: 1.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(5, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 12vh 0 6vh;
+            }
+
+            .title {
+                font-size: 12vw;
+            }
+
+            .subtitle {
+                font-size: 0.9rem;
+                margin-top: 1rem;
+            }
+
+            .feature-item {
+                min-height: 150px;
+                padding: 1.2rem;
+            }
+
+            .feature-icon {
+                font-size: 1.5rem;
+            }
+
+            .feature-title {
+                font-size: 1.1rem;
+            }
+
+            .feature-desc {
+                font-size: 0.8rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(10, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 光束效果 -->
+    <div class="beam"></div>
+    <div class="beam"></div>
+
+    <!-- 背景噪点 -->
+    <div class="noise"></div>
+
+    <!-- 视频背景 -->
+    <div class="background-container">
+        <video class="video-background" autoplay loop muted playsinline id="videoBackground">
+            <source src="assets/ai-background.mp4" type="video/mp4">
+            <source src="assets/ai-background.webm" type="video/webm">
+        </video>
+        <img class="image-background" src="assets/ai-background.jpg" alt="AI背景" id="imageBackground">
+        <div class="vignette"></div>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo">DEEPSEEK MEDIA</div>
+
+    <!-- 滚动提示 -->
+    <div class="scroll-down">
+        <div class="scroll-text">SCROLL</div>
+        <div class="scroll-indicator"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-container">
+        <!-- 标题区域 -->
+        <header class="header">
+            <div class="title-container">
+                <h1 class="title">融媒体<br><span class="highlight">智能</span>辅助平台</h1>
+                <p class="subtitle">专为内容创作者设计的一站式AI平台，搭载DeepSeek大语言模型，重新定义创作体验。</p>
+            </div>
+        </header>
+
+        <!-- 功能展示区 -->
+        <section class="features-wrapper">
+            <div class="features-grid">
+                <!-- 功能1: AI对话 -->
+                <div class="feature-item" onclick="navigate('ai-dialog')">
+                    <div>
+                        <div class="feature-icon">🎙️</div>
+                        <h3 class="feature-title">AI 对话</h3>
+                        <p class="feature-desc">智能语音交互，支持连续对话，理解上下文</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能2: 文章分析 -->
+                <div class="feature-item" onclick="navigate('article-analysis')">
+                    <div>
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">文章分析</h3>
+                        <p class="feature-desc">深入解析文章结构与内容，评估质量与影响力</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能3: 热点发现 -->
+                <div class="feature-item" onclick="navigate('hot-topics')">
+                    <div>
+                        <div class="feature-icon">🔥</div>
+                        <h3 class="feature-title">热点挖掘</h3>
+                        <p class="feature-desc">实时追踪与预测热门话题，把握传播先机</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能4: 视频脚本 -->
+                <div class="feature-item" onclick="navigate('video-script')">
+                    <div>
+                        <div class="feature-icon">✏️</div>
+                        <h3 class="feature-title">脚本生成</h3>
+                        <p class="feature-desc">一键创建专业视频脚本，定制多种风格与平台</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能5: 音频处理 -->
+                <div class="feature-item" onclick="navigate('audio-processing')">
+                    <div>
+                        <div class="feature-icon">🎵</div>
+                        <h3 class="feature-title">语音转译</h3>
+                        <p class="feature-desc">高精度音频识别，自动提取关键信息</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能6: 内容转写 -->
+                <div class="feature-item" onclick="navigate('content-transform')">
+                    <div>
+                        <div class="feature-icon">🔄</div>
+                        <h3 class="feature-title">内容重构</h3>
+                        <p class="feature-desc">跨媒体形式转换，保持内容精髓与表达力</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能7: 智能写作 -->
+                <div class="feature-item" onclick="navigate('auto-writing')">
+                    <div>
+                        <div class="feature-icon">📝</div>
+                        <h3 class="feature-title">智能写作</h3>
+                        <p class="feature-desc">自动生成高质量文章，支持多种风格调整</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能8: 数据可视化 -->
+                <div class="feature-item" onclick="navigate('data-visualization')">
+                    <div>
+                        <div class="feature-icon">📈</div>
+                        <h3 class="feature-title">数据可视化</h3>
+                        <p class="feature-desc">将复杂数据转换为直观图表，提升解读效率</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能9: 智能排期 -->
+                <div class="feature-item" onclick="navigate('media-scheduling')">
+                    <div>
+                        <div class="feature-icon">📅</div>
+                        <h3 class="feature-title">智能排期</h3>
+                        <p class="feature-desc">优化内容发布时间与频率，提高触达效果</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+
+                <!-- 功能10: 情感分析 -->
+                <div class="feature-item" onclick="navigate('sentiment-analysis')">
+                    <div>
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">情感分析</h3>
+                        <p class="feature-desc">解析文本情感倾向，把握舆情走向</p>
+                    </div>
+                    <div class="feature-indicator"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 底部区域 -->
+        <footer class="footer">
+            <p>© 2023 融媒体AI助手系统 · 基于DeepSeek模型构建</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 视频处理
+            const video = document.getElementById('videoBackground');
+            const image = document.getElementById('imageBackground');
+
+            // 视频加载成功后添加动画类
+            video.addEventListener('canplay', function () {
+                setTimeout(() => {
+                    video.classList.add('active');
+                }, 500);
+            });
+
+            // 视频加载错误时显示图片
+            video.addEventListener('error', function () {
+                video.style.display = 'none';
+                image.style.display = 'block';
+            });
+
+            // 检查视频是否无法播放
+            setTimeout(function () {
+                if (video.readyState === 0) {
+                    video.style.display = 'none';
+                    image.style.display = 'block';
+                }
+            }, 1000);
+
+            // 视差滚动效果
+            window.addEventListener('scroll', function () {
+                const scrollY = window.scrollY;
+                const title = document.querySelector('.title');
+                const titleContainer = document.querySelector('.title-container');
+
+                if (title && titleContainer) {
+                    const offset = scrollY * 0.4;
+                    title.style.transform = `translateY(-${offset}px)`;
+                }
+            });
+        });
+
+        // 页面导航
+        function navigate(page) {
+            console.log('导航到页面:', page);
+
+            // 使用以下方式导航到真实页面
+            // window.location.href = page + '.html';
+
+            // 演示模式：显示提示信息
+            alert(`您选择了"${page}"功能。此功能正在开发中。`);
+        }
+    </script>
+</body>
+
+</html>
