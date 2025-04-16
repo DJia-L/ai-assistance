@@ -3166,3 +3166,11 @@
 2025-04-14 23:27:25,965 - task_manager - INFO - Task Manager started
 2025-04-14 23:27:25,966 - app.main - INFO - 应用启动完成，默认管理员账号已处理，任务管理器已启动
 2025-04-14 23:28:09,628 - app.main - INFO - 关闭应用
+2025-04-16 09:05:25,754 - app.main - INFO - 启动应用
+2025-04-16 09:05:25,755 - app.main - INFO - 上传目录已存在: E:\Work\ai-assistance\backend\uploads
+2025-04-16 09:05:25,755 - app.main - INFO - 文档目录已存在: E:\Work\ai-assistance\backend\uploads\documents
+2025-04-16 09:05:25,755 - app.main - INFO - 嵌入目录已存在: E:\Work\ai-assistance\backend\uploads\embeddings
+2025-04-16 09:05:25,760 - task_manager - INFO - Document processor worker started
+2025-04-16 09:05:25,761 - task_manager - INFO - Embedding worker started
+2025-04-16 09:05:25,761 - task_manager - INFO - Task Manager started
+2025-04-16 09:05:25,761 - app.main - INFO - 应用启动完成，默认管理员账号已处理，任务管理器已启动
