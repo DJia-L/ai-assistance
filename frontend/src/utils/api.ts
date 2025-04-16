@@ -6,7 +6,16 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // 创建一个axios实例
 const api = axios.create({
   baseURL,
-  timeout: 30000,
+  timeout: 30000, // 普通请求的超时时间
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// 创建一个专门用于AI聊天请求的axios实例，具有更长的超时时间
+const aiChatApi = axios.create({
+  baseURL,
+  timeout: 120000, // 增加到120秒，适应较长的AI响应时间
   headers: {
     'Content-Type': 'application/json',
   },
@@ -82,6 +91,52 @@ api.interceptors.response.use(
     
     // 详细记录错误信息以便调试
     console.error('API错误详情:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: errorMessage,
+      details: error.response?.data
+    });
+    
+    return Promise.reject(new Error(errorMessage));
+  }
+);
+
+// 为AI聊天API添加同样的请求拦截器
+aiChatApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    console.error('API请求拦截器错误:', error);
+    return Promise.reject(error);
+  }
+);
+
+// 为AI聊天API添加同样的响应拦截器
+aiChatApi.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error: AxiosError) => {
+    // 如果是超时错误，提供更明确的错误信息
+    if (error.code === 'ECONNABORTED') {
+      console.error('AI请求超时:', error.message);
+      return Promise.reject(new Error('AI响应时间过长，请稍后再试'));
+    }
+    
+    // 获取具体错误信息
+    const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          '未知错误';
+    
+    // 详细记录错误信息以便调试
+    console.error('AI API错误详情:', {
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
@@ -279,7 +334,7 @@ export async function sendMessage(
     
     console.log('发送请求数据:', requestData);
     
-    const response = await api.post('/api/ai/chat', requestData);
+    const response = await aiChatApi.post('/api/ai/chat', requestData);
     console.log('收到AI响应原始数据:', response);
     console.log('响应数据类型:', typeof response);
     

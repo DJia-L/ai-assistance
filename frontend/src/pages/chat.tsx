@@ -491,6 +491,19 @@ export default function ChatPage() {
     const messageText = input.trim();
     setInput('');
     
+    // 添加变量跟踪长响应时间
+    let responseStartTime = Date.now();
+    // 添加超时检查的定时器
+    let longResponseTimer = setTimeout(() => {
+      // 显示长响应提示
+      const systemMessage = { 
+        role: 'system' as MessageRole, 
+        content: '正在生成回复，可能需要较长时间，请耐心等待...',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, systemMessage]);
+    }, 15000); // 15秒后提示用户
+    
     try {
       // 获取用户信息
       const userStr = localStorage.getItem('user');
@@ -547,9 +560,19 @@ export default function ChatPage() {
         kbId
       );
       
+      // 计算响应时间
+      const responseTime = (Date.now() - responseStartTime) / 1000;
+      console.log(`AI响应时间: ${responseTime.toFixed(2)}秒`);
+      
       console.log('收到AI响应:', response);
       
       if (response && response.text) {
+        // 清除长响应提示
+        clearTimeout(longResponseTimer);
+        setMessages(msgs => msgs.filter(msg => 
+          !(msg.role === 'system' && msg.content === '正在生成回复，可能需要较长时间，请耐心等待...')
+        ));
+        
         // 添加AI回复到消息列表
         const aiMessage: ChatMessage = { 
           role: 'assistant' as MessageRole, 
@@ -612,10 +635,28 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('发送消息失败:', error);
-      // 显示错误消息
-      message.error(error instanceof Error ? error.message : '发送消息失败，请重试');
-      // 移除失败的消息
-      setMessages(messages);
+      
+      // 清除长响应提示
+      clearTimeout(longResponseTimer);
+      
+      // 添加错误消息到对话
+      const errorMsg = error instanceof Error ? error.message : '发送消息失败，请重试';
+      const errorMessage = { 
+        role: 'system' as MessageRole, 
+        content: `错误: ${errorMsg}`,
+        timestamp: new Date()
+      };
+      
+      // 更新消息列表，保留用户消息，添加错误提示
+      setMessages(prev => {
+        const filteredMessages = prev.filter(msg => 
+          !(msg.role === 'system' && msg.content === '正在生成回复，可能需要较长时间，请耐心等待...')
+        );
+        return [...filteredMessages, errorMessage];
+      });
+      
+      // 显示错误通知
+      message.error(errorMsg);
     } finally {
       setIsSending(false);
     }
@@ -659,9 +700,12 @@ export default function ChatPage() {
       
       if (response) {
         // 设置任务状态监控
+        const docId = response.id || '';
+        const docStatus = response.status || 'processing';
+        
         setTaskStatus({
-          id: response.id || String(response.data?.id),
-          status: response.status || response.data?.status || 'processing'
+          id: docId,
+          status: docStatus
         });
         
         // 设置定时器检查任务状态
@@ -672,14 +716,13 @@ export default function ChatPage() {
         // 每3秒检查一次任务状态，直到任务完成或失败
         taskCheckIntervalRef.current = setInterval(async () => {
           try {
-            const statusId = response.id || response.data?.id;
-            if (!statusId) {
+            if (!docId) {
               console.error('无效的任务ID');
               clearInterval(taskCheckIntervalRef.current);
               return;
             }
             
-            const statusResponse = await getTaskStatus(String(statusId));
+            const statusResponse = await getTaskStatus(docId);
             if (statusResponse) {
               setTaskStatus(statusResponse);
               
@@ -837,10 +880,16 @@ export default function ChatPage() {
                   messages.map((msg, index) => (
                     <div
                       key={index}
-                      className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                      className={`message ${msg.role === 'user' ? 'user-message' : msg.role === 'assistant' ? 'assistant-message' : 'system-message'}`}
                     >
                       <div className="message-bubble">
                         <div className="message-content">{msg.content}</div>
+                        {msg.role === 'assistant' && msg.model && (
+                          <>
+                            <div className="model-divider"></div>
+                            <div className="message-model">来自 {msg.model}</div>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))
@@ -1173,21 +1222,27 @@ export default function ChatPage() {
         .message-bubble {
           padding: 12px 16px;
           border-radius: 8px;
+          position: relative;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .user-message .message-bubble {
           background-color: #1a73e8;
           color: white;
+          border-radius: 8px 8px 0 8px;
         }
         
         .assistant-message .message-bubble {
           background-color: #f0f0f0;
           color: #333;
+          border-radius: 8px 8px 8px 0;
+          padding-bottom: 24px; /* 增加底部padding为分隔线和模型标签留出空间 */
         }
         
         .message-content {
           white-space: pre-wrap;
           word-break: break-word;
+          margin-bottom: 4px;
         }
         
         .sending-indicator {
@@ -1688,6 +1743,43 @@ export default function ChatPage() {
         
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        .system-message {
+          align-self: center;
+          max-width: 90%;
+        }
+
+        .system-message .message-bubble {
+          background-color: #fff3e0;
+          color: #e65100;
+          border: 1px solid #ffe0b2;
+          font-style: italic;
+        }
+
+        .message-model {
+          font-size: 10px;
+          color: #888;
+          font-style: italic;
+          position: absolute;
+          bottom: 4px;
+          right: 10px;
+          font-family: system-ui, -apple-system, sans-serif;
+          letter-spacing: 0.2px;
+          opacity: 0.8;
+          font-weight: 400;
+        }
+
+        .model-divider {
+          height: 1px;
+          background-color: rgba(0, 0, 0, 0.06);
+          margin: 0 -16px;
+          margin-top: 4px;
+          margin-bottom: 4px;
+          position: absolute;
+          bottom: 20px;
+          width: calc(100% + 32px);
+          left: 0;
         }
       `}</style>
     </div>
